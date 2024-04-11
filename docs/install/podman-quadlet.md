@@ -12,6 +12,12 @@ Please note you'll need :z or :Z for selinux enabled hosts.
 
 If you are doing hardware acceleration with NVIDIA make sure you follow the immich documentation including the appropriate NVIDIA Container Device Interface (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/cdi-support.html) and adding the device (AddDevice=nvidia.com/gpu=0).
 
+# Sample Quadlet Files
+
+It is recommended to run these rootless, and as such the ideal place is likely /etc/containers/systemd/users/${UID}
+
+## Universal
+
 immich-database.container
 ```bash
 [Unit]
@@ -27,61 +33,6 @@ Network=slirp4netns:port_handler=slirp4netns
 PublishPort=5432:5432
 Volume=${host_database_directory}:/var/lib/postgresql/data:z
 Volume=/etc/localtime:/etc/localtime:ro
-
-[Service]
-Restart=always
-
-[Install]
-WantedBy=multi-user.target default.target
-```
-
-immich-microservices.container
-```bash
-[Unit]
-Description=Immich Microservices
-Requires=immich-redis.service immich-database.service
-
-[Container]
-#AddDevice=/dev/dri:/dev/dri #Needed for HWA
-#AddDevice=nvidia.com/gpu=0 #Needed for nvidia HWA, after setting up container tools
-AutoUpdate=registry
-EnvironmentFile=${location_of_env_file}
-Image=ghcr.io/immich-app/immich-server:release
-Label=registry
-Network=slirp4netns:port_handler=slirp4netns
-PublishPort=3002:3002
-Volume=${host_upload_directory}:/usr/src/app/upload:z
-Volume=/etc/localtime:/etc/localtime:ro
-Exec=start.sh microservices
-#Unmask=/dev/dri:/dev/dri #May be needed if doing HWA
-#UserNS=keep-id #May be needed if doing HWA
-
-[Service]
-Restart=always
-
-[Install]
-WantedBy=multi-user.target default.target
-```
-
-immich-ml.container
-```bash
-
-[Unit]
-Description=Immich Machine Learning
-Requires=immich-redis.service immich-database.service
-
-[Container]
-#AddDevice=/dev/dri:/dev/dri #Needed for HWA
-#AddDevice=nvidia.com/gpu=0 #Needed for nvidia HWA, after setting up container tools
-AutoUpdate=registry
-EnvironmentFile=${location_of_env_file}
-Image=ghcr.io/immich-app/immich-machine-learning:release
-Label=registry
-Network=slirp4netns:port_handler=slirp4netns
-PublishPort=3003:3003
-Volume=${cache_directory}:/cache:z
-Volume=/etc/localtime:/etc/localtime:ro
-#Unmask=/dev/dri:/dev/dri #May be needed for HWA
 
 [Service]
 Restart=always
@@ -126,6 +77,107 @@ Exec=start.sh immich
 PublishPort=3000:3000
 PublishPort=3001:3001
 Volume=${host_upload_directory}:/usr/src/app/upload
+Volume=/etc/localtime:/etc/localtime:ro
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target
+```
+
+## No Hardware Acceleration
+
+immich-microservices.container
+```bash
+[Unit]
+Description=Immich Microservices
+Requires=immich-redis.service immich-database.service
+
+[Container]
+AutoUpdate=registry
+EnvironmentFile=${location_of_env_file}
+Image=ghcr.io/immich-app/immich-server:release
+Label=registry
+Network=slirp4netns:port_handler=slirp4netns
+PublishPort=3002:3002
+Volume=${host_upload_directory}:/usr/src/app/upload:z
+Volume=/etc/localtime:/etc/localtime:ro
+Exec=start.sh microservices
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target
+```
+
+immich-ml.container
+```bash
+
+[Unit]
+Description=Immich Machine Learning
+Requires=immich-redis.service immich-database.service
+
+[Container]
+AutoUpdate=registry
+EnvironmentFile=${location_of_env_file}
+Image=ghcr.io/immich-app/immich-machine-learning:release
+Label=registry
+Network=slirp4netns:port_handler=slirp4netns
+PublishPort=3003:3003
+Volume=${cache_directory}:/cache:z
+Volume=/etc/localtime:/etc/localtime:ro
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target
+```
+
+## Hardware Acceleration - NVIDIA CUDA
+
+immich-microservices.container
+```bash
+[Unit]
+Description=Immich Microservices
+Requires=mnt-data01.mount immich-redis.service immich-database.service
+
+[Container]
+AddDevice=nvidia.com/gpu=0
+AutoUpdate=registry
+EnvironmentFile=/mnt/data01/immich-app/.env
+Image=ghcr.io/immich-app/immich-server:release
+Label=registry
+Network=slirp4netns:port_handler=slirp4netns
+PublishPort=3002:3002
+Volume=/mnt/data01/uploads:/usr/src/app/upload:z
+Volume=/etc/localtime:/etc/localtime:ro
+Exec=start.sh microservices
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target
+```
+
+immich-ml.container
+```bash
+[Unit]
+Description=Immich Machine Learning
+Requires=mnt-data01.mount immich-redis.service immich-database.service
+
+[Container]
+AddDevice=nvidia.com/gpu=0
+AutoUpdate=registry
+EnvironmentFile=/mnt/data01/immich-app/.env
+Image=ghcr.io/immich-app/immich-machine-learning:release-cuda
+Label=registry
+Network=slirp4netns:port_handler=slirp4netns
+PublishPort=3003:3003
+Volume=/mnt/data01/model-cache:/cache:z
 Volume=/etc/localtime:/etc/localtime:ro
 
 [Service]
