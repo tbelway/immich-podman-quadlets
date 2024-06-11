@@ -76,7 +76,7 @@ Environment=IMMICH_WORKERS_INCLUDE='api'
 Image=ghcr.io/immich-app/immich-server:release
 Label=registry
 Network=slirp4netns:port_handler=slirp4netns
-Exec=start.sh immich
+#Exec=start.sh immich
 PublishPort=3000:3000
 PublishPort=3001:3001
 Volume=${host_upload_directory}:/usr/src/app/upload
@@ -107,7 +107,7 @@ Network=slirp4netns:port_handler=slirp4netns
 PublishPort=3002:3002
 Volume=${host_upload_directory}:/usr/src/app/upload:z
 Volume=/etc/localtime:/etc/localtime:ro
-Exec=start.sh microservices
+#Exec=start.sh microservices
 
 [Service]
 Restart=always
@@ -151,6 +151,7 @@ Requires=mnt-data01.mount immich-redis.service immich-database.service
 [Container]
 AddDevice=nvidia.com/gpu=0
 AutoUpdate=registry
+Environment=IMMICH_WORKERS_EXCLUDE='api'
 EnvironmentFile=/mnt/data01/immich-app/.env
 Image=ghcr.io/immich-app/immich-server:release
 Label=registry
@@ -158,7 +159,7 @@ Network=slirp4netns:port_handler=slirp4netns
 PublishPort=3002:3002
 Volume=/mnt/data01/uploads:/usr/src/app/upload:z
 Volume=/etc/localtime:/etc/localtime:ro
-Exec=start.sh microservices
+#Exec=start.sh microservices
 
 [Service]
 Restart=always
