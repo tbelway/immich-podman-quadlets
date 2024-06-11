@@ -11,6 +11,9 @@ nv_init.sh
 ```bash
 #!/bin/bash
 
+echo "generate yaml in case of driver upgrade"
+nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+
 echo "modprobe nvidia"
 /sbin/modprobe nvidia
 

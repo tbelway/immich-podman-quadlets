@@ -8,6 +8,8 @@ You can deploy Immich on Podman using quadlets.
 
 Here are some sample rootless quadlet container files that can be placed in /etc/containers/systemd/users/${ID} where ID is the uid of whatever your rootless user is.
 
+With Immich version 1.106.1 the microservices container no longer has to be separate from the immich server container. That being said, in the case where you would prefer to offload to a separate GPU accelerated VM this is still the preferred method. The quadlets provided below give a sample of said scenario. Feel free to remove the Environment variable that declares the API include and exclude if you prefer just the one container to run both.
+
 Please note you'll need :z or :Z for selinux enabled hosts.
 
 If you are doing hardware acceleration with NVIDIA make sure you follow the immich documentation including the appropriate NVIDIA Container Device Interface (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/cdi-support.html) and adding the device (AddDevice=nvidia.com/gpu=0).
@@ -70,6 +72,7 @@ Requires=immich-redis.service immich-database.service
 [Container]
 AutoUpdate=registry
 EnvironmentFile=${location_of_env_file}
+Environment=IMMICH_WORKERS_INCLUDE='api'
 Image=ghcr.io/immich-app/immich-server:release
 Label=registry
 Network=slirp4netns:port_handler=slirp4netns
@@ -97,6 +100,7 @@ Requires=immich-redis.service immich-database.service
 [Container]
 AutoUpdate=registry
 EnvironmentFile=${location_of_env_file}
+Environment=IMMICH_WORKERS_EXCLUDE='api'
 Image=ghcr.io/immich-app/immich-server:release
 Label=registry
 Network=slirp4netns:port_handler=slirp4netns
