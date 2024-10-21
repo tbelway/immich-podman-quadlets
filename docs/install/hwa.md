@@ -11,11 +11,11 @@ nv_init.sh
 ```bash
 #!/bin/bash
 
-echo "generate yaml in case of driver upgrade"
-nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
-
 echo "modprobe nvidia"
 /sbin/modprobe nvidia
+
+echo "modprobe nvidia-uvm"
+/sbin/modprobe nvidia-uvm
 
 if [ "$?" -eq 0 ]; then
   # Count the number of NVIDIA controllers found.
@@ -40,9 +40,6 @@ else
   exit 1
 fi
 
-echo "modprobe nvidia-uvm"
-/sbin/modprobe nvidia-uvm
-
 if [ "$?" -eq 0 ]; then
   # Find out the major device number used by the nvidia-uvm driver
   D=`grep nvidia-uvm /proc/devices | awk '{print $1}'`
@@ -59,6 +56,9 @@ else
   echo "exit nvidia-uvm"
   exit 1
 fi
+
+echo "generate yaml in case of driver upgrade"
+nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 ```
 
 /etc/systemd/system/init_nvidia.service
@@ -73,9 +73,9 @@ ConditionPathExists=|!/dev/nvidia-uvm-tools
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash ${your_path_to_script}/nv_init.sh
+ExecStart=/bin/bash /opt/git/containers/rootless/containers/immich/nv_init.sh
 RemainAfterExit=yes
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 ```

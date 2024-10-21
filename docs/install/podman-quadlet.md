@@ -34,6 +34,7 @@ Label=registry
 Network=slirp4netns:port_handler=slirp4netns
 PublishPort=5432:5432
 Volume=${host_database_directory}:/var/lib/postgresql/data:z
+Volume=${host_database_backup_directory}:/mnt/db_backup:z
 Volume=/etc/localtime:/etc/localtime:ro
 
 [Service]
@@ -63,6 +64,30 @@ Restart=always
 WantedBy=multi-user.target default.target
 ```
 
+Alternatively you can use valkey
+```bash
+[Unit]
+Description=Immich Keydb
+
+[Container]
+AutoUpdate=registry
+HealthCmd=redis-cli ping || exit 1
+HealthInterval=1m
+HealthOnFailure=kill
+Image=docker.io/valkey/valkey:latest
+Label=registry
+Network=host
+PublishPort=6379:6379
+Timezone=America/Montreal
+Volume=/mnt/data01/immich-valkey:/data:z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target default.target
+```
+
 immich-server.container
 ```bash
 [Unit]
@@ -76,7 +101,6 @@ Environment=IMMICH_WORKERS_INCLUDE='api'
 Image=ghcr.io/immich-app/immich-server:release
 Label=registry
 Network=slirp4netns:port_handler=slirp4netns
-#Exec=start.sh immich
 PublishPort=3000:3000
 PublishPort=3001:3001
 Volume=${host_upload_directory}:/usr/src/app/upload
@@ -118,7 +142,6 @@ WantedBy=multi-user.target default.target
 
 immich-ml.container
 ```bash
-
 [Unit]
 Description=Immich Machine Learning
 Requires=immich-redis.service immich-database.service
@@ -146,20 +169,21 @@ immich-microservices.container
 ```bash
 [Unit]
 Description=Immich Microservices
-Requires=mnt-data01.mount immich-redis.service immich-database.service
+Requires=immich-redis.service immich-database.service
 
 [Container]
+AddDevice=/dev/dri:/dev/dri
 AddDevice=nvidia.com/gpu=0
 AutoUpdate=registry
+EnvironmentFile=${location_of_env_file}
 Environment=IMMICH_WORKERS_EXCLUDE='api'
-EnvironmentFile=/mnt/data01/immich-app/.env
-Image=ghcr.io/immich-app/immich-server:release
+Image=ghcr.io/immich-app/immich-server:${release} # This is for v118.0 and up
 Label=registry
 Network=slirp4netns:port_handler=slirp4netns
 PublishPort=3002:3002
 Volume=/mnt/data01/uploads:/usr/src/app/upload:z
 Volume=/etc/localtime:/etc/localtime:ro
-#Exec=start.sh microservices
+Unmask=/dev/dri:/dev/dri
 
 [Service]
 Restart=always
@@ -172,18 +196,21 @@ immich-ml.container
 ```bash
 [Unit]
 Description=Immich Machine Learning
-Requires=mnt-data01.mount immich-redis.service immich-database.service
+Requires=mnt-data01.mount mnt-data01-uploads.mount
+After==mnt-data01.mount mnt-data01-uploads.mount
 
 [Container]
-AddDevice=nvidia.com/gpu=0
+AddDevice=/dev/dri:/dev/dri
+AddDevice=nvidia.com/gpu=0 # Make sure this matched your GPU ID
 AutoUpdate=registry
-EnvironmentFile=/mnt/data01/immich-app/.env
-Image=ghcr.io/immich-app/immich-machine-learning:release-cuda
+EnvironmentFile=${location_of_env_file}
+Image=ghcr.io/immich-app/immich-machine-learning:${release} # This is for v118.0 and up
 Label=registry
 Network=slirp4netns:port_handler=slirp4netns
-PublishPort=3003:3003
+#PublishPort=3003:3003
 Volume=/mnt/data01/model-cache:/cache:z
 Volume=/etc/localtime:/etc/localtime:ro
+Unmask=/dev/dri:/dev/dri
 
 [Service]
 Restart=always
