@@ -1,6 +1,4 @@
 ---
-sidebar_position: 90
----
 
 # Podman deploy with quadlets
 
