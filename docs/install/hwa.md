@@ -1,10 +1,9 @@
 ---
-sidebar_position: 100
----
 
 # HardWare Acceleration setup for immich with podman
+## Nvidia
 
-If you are using NVIDIA on a redhat OS such as fedora or almalinux, reboots sometimes cause the nvidia-uvm and nvidia-uvm-tools to just... not load. Use the following script and systemd file to correct this behaviour:
+If you are using NVIDIA on a redhat OS such as fedora or almalinux, kernel updates sometimes cause the nvidia-uvm and nvidia-uvm-tools to just... not load promptly... Use the following script and systemd file to correct this behaviour:
 
 You can ultimately place this wherever you want as long as it's referenced appropriately in the systemd file:
 nv_init.sh
